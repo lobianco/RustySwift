@@ -1,0 +1,18 @@
+[package]
+name = "ffi"
+version = "0.1.0"
+authors = ["Anthony Lobianco <anthony@lobian.co>"]
+edition = "2021"
+
+[lib]
+name = "rustyswift"
+crate-type = ["staticlib"]
+
+[dependencies]
+weather = { path = "../weather" }
+futures-preview = { version = "0.3.0-alpha.19", features = ["compat"] }
+libc = { version = "0.2.53", default-features = false }
+serde = { version = "1.0.98", default-features = false }
+serde_derive = { version = "1.0.92", default-features = false }
+serde_json = { version = "1.0", default-features = false }
+tokio = { version = "0.2.0-alpha.6", default-features = false }
