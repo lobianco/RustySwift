@@ -20,6 +20,7 @@ public typealias StringCallback = (String?) -> Void
 //
 public class RustySwift {
 
+    // the background queue to run the Rust function on
     private static let workQueue = DispatchQueue(
         label: "com.lobianco.RustySwift.workQueue",
         qos: .background,
@@ -33,7 +34,12 @@ public class RustySwift {
     //   - completion: An optional closure that will fire upon completion
     //
     public static func rustyFetchWeather(with json: String, completion: StringCallback?) {
-        invoke(fn: fetch_weather, json, workQueue, completion)
+        invoke(
+            rustFunction: fetch_weather,
+            with: json,
+            on: workQueue,
+            completion: completion
+        )
     }
     
 }
@@ -74,10 +80,10 @@ private extension RustySwift {
     //   - completion: An optional closure that will fire upon completion
     //
     private static func invoke(
-        fn: CRustySwiftRequestFunction,
-        _ json: String,
-        _ queue: DispatchQueue = .global(qos: .background),
-        _ completion: StringCallback?
+        rustFunction: CRustySwiftRequestFunction,
+        with json: String,
+        on queue: DispatchQueue = .global(qos: .background),
+        completion: StringCallback?
     ) {
 
         // The variable below is the callback function that Rust will invoke after it
@@ -105,7 +111,7 @@ private extension RustySwift {
         // closure that we stored inside. Then it can be called normally. How cool is
         // that?
         //
-        let callbackFn: CRustySwiftResponseCallback = { (unsafeResponse: UnsafePointer<Int8>?, unsafeContextPtr: UnsafeMutableRawPointer?) in
+        let callback: CRustySwiftResponseCallback = { (unsafeResponse: UnsafePointer<Int8>?, unsafeContextPtr: UnsafeMutableRawPointer?) in
             // make sure we're still on the same work queue...
             let queueLabel = String(cString: __dispatch_queue_get_label(nil))
             assert(queueLabel == "com.lobianco.RustySwift.workQueue")
@@ -139,7 +145,11 @@ private extension RustySwift {
 
         // Do the work in the background
         queue.async {
-            fn(json.unsafePointer(), callbackFn, context.retainedPointer())
+            rustFunction(
+                json.unsafePointer(),
+                callback,
+                context.retainedPointer()
+            )
         }
 
         print("Waiting on Rust function to complete...")
